@@ -43,7 +43,7 @@ ZEND_END_ARG_INFO()
  * Every user visible function must have an entry in comuto_functions[].
  */
 const zend_function_entry comuto_functions[] = {
-	PHP_FE(array_create_rand,	arginfo_array_create_rand)		/* For testing, remove later. */
+	PHP_FE(com_array_create_rand,	arginfo_array_create_rand)		/* For testing, remove later. */
 	PHP_FE_END	/* Must be the last line in comuto_functions[] */
 };
 /* }}} */
@@ -54,7 +54,7 @@ zend_module_entry comuto_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
 	STANDARD_MODULE_HEADER,
 #endif
-	"comuto",
+	"comuto_tools",
 	comuto_functions,
 	PHP_MINIT(comuto),
 	PHP_MSHUTDOWN(comuto),
@@ -97,6 +97,8 @@ static void php_comuto_init_globals(zend_comuto_globals *comuto_globals)
  */
 PHP_MINIT_FUNCTION(comuto)
 {
+	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_STRING", COM_ARRAY_RAND_TYPE_STRING, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_INT", COM_ARRAY_RAND_TYPE_INT, CONST_CS | CONST_PERSISTENT);
 	/* If you have INI entries, uncomment these lines 
 	REGISTER_INI_ENTRIES();
 	*/
@@ -138,7 +140,7 @@ PHP_RSHUTDOWN_FUNCTION(comuto)
 PHP_MINFO_FUNCTION(comuto)
 {
 	php_info_print_table_start();
-	php_info_print_table_header(2, "comuto support", "enabled");
+	php_info_print_table_header(2, "Comuto Tools support", "enabled");
 	php_info_print_table_end();
 
 	/* Remove comments if you have entries in php.ini
@@ -147,12 +149,27 @@ PHP_MINFO_FUNCTION(comuto)
 }
 /* }}} */
 
-
-PHP_FUNCTION(array_create_rand)
+static void generate_random_string(char **str)
 {
-	long num_items;
+	long str_size, index;
+	static const char alpha[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	size_t j                  = 0;
+	GET_RANDOM_NUMBER(str_size, 1, RANDOM_STRING_SIZE);
+	*str      = emalloc(str_size + 1);
 
-	if(zend_parse_parameters(ZEND_NUM_ARGS(), "l", &num_items) == FAILURE) {
+	while(str_size--){
+		GET_RANDOM_NUMBER(index, 1, sizeof(alpha) - 2);
+		(*str)[j++] = alpha[index];
+	}
+	(*str)[j] = '\0';
+}
+
+PHP_FUNCTION(com_array_create_rand)
+{
+	long num_items, items_type;
+	items_type = COM_ARRAY_RAND_TYPE_STRING;
+
+	if(zend_parse_parameters(ZEND_NUM_ARGS(), "l|l", &num_items, &items_type) == FAILURE) {
 		return;
 	}
 
@@ -164,22 +181,35 @@ PHP_FUNCTION(array_create_rand)
 	HashTable *table;
 	array_init_size(return_value, num_items);
 
-	ulong i              = 0;
-	char alpha[]         = "0123456789abcdefghijklmnopqrstuvwxyz";
-	long str_size, index = 0;
-	char *str            = NULL;
-	size_t j             = 0;
+	ulong i;
+	long index;
+	long generated_long;
+	char *generated_string = NULL;
 
-	for(; i<num_items; i++, j=0) {
-		str_size = php_rand(TSRMLS_C); RAND_RANGE(str_size, 1, 64, PHP_RAND_MAX);
-		str      = emalloc(str_size + 1);
-
-		while(str_size--){
-			index = php_rand(TSRMLS_C); RAND_RANGE(index, 1, sizeof(alpha) - 2, PHP_RAND_MAX);
-			str[j++] = alpha[index];
+	for(i=0; i<num_items; i++) {
+		switch (items_type) {
+			case (COM_ARRAY_RAND_TYPE_STRING | COM_ARRAY_RAND_TYPE_INT):
+				GET_RANDOM_NUMBER(index, 0, 1);
+				if(index) {
+					generate_random_string(&generated_string);
+					add_next_index_string(return_value, generated_string, 0);
+				} else {
+					generate_random_long(generated_long);
+					add_next_index_long(return_value, generated_long);
+				}
+			break;
+			case COM_ARRAY_RAND_TYPE_STRING:
+				generate_random_string(&generated_string);
+				add_next_index_string(return_value, generated_string, 0);
+			break;
+			case COM_ARRAY_RAND_TYPE_INT:
+				generate_random_long(generated_long);
+				add_next_index_long(return_value, generated_long);
+			break;
+			default:
+				php_error_docref(NULL, E_WARNING, "Unknown type");
+				return;
 		}
-		str[j] = '\0';
-		add_next_index_string(return_value, str, 0);
 	}
 }
 

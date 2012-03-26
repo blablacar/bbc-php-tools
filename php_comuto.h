@@ -36,13 +36,19 @@ extern zend_module_entry comuto_module_entry;
 #include "TSRM.h"
 #endif
 
+#define COM_ARRAY_RAND_TYPE_STRING 1
+#define COM_ARRAY_RAND_TYPE_INT    2
+#define GET_RANDOM_NUMBER(_number, _min, _max) {(_number) = php_rand(TSRMLS_C); RAND_RANGE((_number), (_min), (_max), PHP_RAND_MAX);}
+#define RANDOM_STRING_SIZE 42 /* yes */
+#define generate_random_long(_long) (GET_RANDOM_NUMBER((_long), 0, INT_MAX))
+
 PHP_MINIT_FUNCTION(comuto);
 PHP_MSHUTDOWN_FUNCTION(comuto);
 PHP_RINIT_FUNCTION(comuto);
 PHP_RSHUTDOWN_FUNCTION(comuto);
 PHP_MINFO_FUNCTION(comuto);
 
-PHP_FUNCTION(array_create_rand);
+PHP_FUNCTION(com_array_create_rand);
 /* 
   	Declare any global variables you may need between the BEGIN
 	and END macros here:     
