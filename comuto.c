@@ -26,7 +26,9 @@
 #include "ext/standard/php_rand.h"
 #include "php_ini.h"
 #include "ext/standard/info.h"
+
 #include "php_comuto.h"
+#include "comuto_ov_functions.h"
 
 /* If you declare any globals in php_comuto.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(comuto)
@@ -35,16 +37,25 @@ ZEND_DECLARE_MODULE_GLOBALS(comuto)
 /* True global resources - no need for thread safety here */
 static int le_comuto;
 
-ZEND_BEGIN_ARG_INFO(arginfo_array_create_rand, 0)
-	ZEND_ARG_INFO(0, num_item)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_com_array_create_rand, 0, 0, 1)
+	ZEND_ARG_INFO(0, size)
+	ZEND_ARG_INFO(0, type)
+ZEND_END_ARG_INFO()
+ZEND_BEGIN_ARG_INFO(arginfo_com_array_stats, 0)
+	ZEND_ARG_ARRAY_INFO(0, array, 0)
+ZEND_END_ARG_INFO()
+ZEND_BEGIN_ARG_INFO(arginfo_com_get_var_memory_usage, 0)
+	ZEND_ARG_INFO(0, var)
 ZEND_END_ARG_INFO()
 /* {{{ comuto_functions[]
  *
  * Every user visible function must have an entry in comuto_functions[].
  */
 const zend_function_entry comuto_functions[] = {
-	PHP_FE(com_array_create_rand,	arginfo_array_create_rand)		/* For testing, remove later. */
-	PHP_FE_END	/* Must be the last line in comuto_functions[] */
+	COM_FE(array_create_rand,	arginfo_com_array_create_rand)
+	/*COM_FE(array_stats,	arginfo_com_array_stats)
+	COM_FE(get_var_memory_usage, arginfo_com_get_var_memory_usage)*/
+	PHP_FE_END
 };
 /* }}} */
 
@@ -102,6 +113,7 @@ PHP_MINIT_FUNCTION(comuto)
 	/* If you have INI entries, uncomment these lines 
 	REGISTER_INI_ENTRIES();
 	*/
+
 	return SUCCESS;
 }
 /* }}} */
@@ -122,6 +134,10 @@ PHP_MSHUTDOWN_FUNCTION(comuto)
  */
 PHP_RINIT_FUNCTION(comuto)
 {
+	REPLACE_FUNCTION_HANDLE(ini_get);
+	REPLACE_FUNCTION_HANDLE(ini_set);
+	REPLACE_FUNCTION_HANDLE(ini_restore);
+	REPLACE_FUNCTION_HANDLE(get_cfg_var);
 	return SUCCESS;
 }
 /* }}} */
@@ -164,10 +180,12 @@ static void generate_random_string(char **str)
 	(*str)[j] = '\0';
 }
 
-PHP_FUNCTION(com_array_create_rand)
+COM_FUNCTION(array_create_rand)
 {
-	long num_items, items_type;
-	items_type = COM_ARRAY_RAND_TYPE_STRING;
+	long num_items, items_type = COM_ARRAY_RAND_TYPE_STRING, index, generated_long;
+	ulong i;
+	char *generated_string = NULL;
+	HashTable *table;
 
 	if(zend_parse_parameters(ZEND_NUM_ARGS(), "l|l", &num_items, &items_type) == FAILURE) {
 		return;
@@ -178,13 +196,7 @@ PHP_FUNCTION(com_array_create_rand)
 		return;
 	}
 
-	HashTable *table;
 	array_init_size(return_value, num_items);
-
-	ulong i;
-	long index;
-	long generated_long;
-	char *generated_string = NULL;
 
 	for(i=0; i<num_items; i++) {
 		switch (items_type) {
@@ -213,7 +225,15 @@ PHP_FUNCTION(com_array_create_rand)
 	}
 }
 
+COM_FUNCTION(array_stats)
+{
 
+}
+
+COM_FUNCTION(get_var_memory_usage)
+{
+
+}
 /* }}} */
 /* The previous line is meant for vim and emacs, so it can correctly fold and 
    unfold functions in source code. See the corresponding marks just before 

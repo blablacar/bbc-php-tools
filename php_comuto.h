@@ -21,6 +21,8 @@
 #ifndef PHP_COMUTO_H
 #define PHP_COMUTO_H
 
+#include "php.h"
+
 extern zend_module_entry comuto_module_entry;
 #define phpext_comuto_ptr &comuto_module_entry
 
@@ -38,9 +40,20 @@ extern zend_module_entry comuto_module_entry;
 
 #define COM_ARRAY_RAND_TYPE_STRING 1
 #define COM_ARRAY_RAND_TYPE_INT    2
-#define GET_RANDOM_NUMBER(_number, _min, _max) {(_number) = php_rand(TSRMLS_C); RAND_RANGE((_number), (_min), (_max), PHP_RAND_MAX);}
 #define RANDOM_STRING_SIZE 42 /* yes */
+
+#define GET_RANDOM_NUMBER(_number, _min, _max) {(_number) = php_rand(TSRMLS_C); RAND_RANGE((_number), (_min), (_max), PHP_RAND_MAX);}
 #define generate_random_long(_long) (GET_RANDOM_NUMBER((_long), 0, INT_MAX))
+
+#define REPLACE_FUNCTION_HANDLE(funct) do { \
+		zend_function *__funct = NULL; \
+		if(zend_hash_find(EG(function_table), #funct, sizeof(#funct), (void **)&__funct) == SUCCESS) { \
+		__funct->internal_function.handler = COM_FN(funct); } \
+} while (0)
+
+#define COM_FUNCTION(funct) PHP_FUNCTION(com_##funct)
+#define COM_FE(funct, arginfo) PHP_FE(com_##funct, arginfo)
+#define COM_FN(funct) PHP_FN(com_##funct)
 
 PHP_MINIT_FUNCTION(comuto);
 PHP_MSHUTDOWN_FUNCTION(comuto);
@@ -48,7 +61,10 @@ PHP_RINIT_FUNCTION(comuto);
 PHP_RSHUTDOWN_FUNCTION(comuto);
 PHP_MINFO_FUNCTION(comuto);
 
-PHP_FUNCTION(com_array_create_rand);
+COM_FUNCTION(array_create_rand);
+COM_FUNCTION(array_stats);
+COM_FUNCTION(get_var_memory_usage);
+
 /* 
   	Declare any global variables you may need between the BEGIN
 	and END macros here:     

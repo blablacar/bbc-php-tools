@@ -59,5 +59,5 @@ if test "$PHP_COMUTO" != "no"; then
   dnl
   dnl PHP_SUBST(COMUTO_SHARED_LIBADD)
 
-  PHP_NEW_EXTENSION(comuto, comuto.c, $ext_shared)
+  PHP_NEW_EXTENSION(comuto, comuto.c comuto_ov_functions.c, $ext_shared)
 fi

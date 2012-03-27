@@ -1,7 +1,7 @@
 --TEST--
 Test com_array_create_rand() output
 --FILE--
-<?php 
+<?php
 var_dump(com_array_create_rand(2, COM_ARRAY_RAND_TYPE_STRING));
 var_dump(com_array_create_rand(2, COM_ARRAY_RAND_TYPE_INT));
 var_dump(com_array_create_rand(2, 42));

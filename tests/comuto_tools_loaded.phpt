@@ -3,7 +3,7 @@ Check for comuto presence
 --SKIPIF--
 <?php if (!extension_loaded("comuto_tools")) print "skip"; ?>
 --FILE--
-<?php 
+<?php
 echo "comuto extension is available";
 ?>
 --EXPECT--
