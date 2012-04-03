@@ -30,9 +30,7 @@
 #include "php_comuto.h"
 #include "comuto_ov_functions.h"
 
-/* If you declare any globals in php_comuto.h uncomment this:
 ZEND_DECLARE_MODULE_GLOBALS(comuto)
-*/
 
 /* True global resources - no need for thread safety here */
 static int le_comuto;
@@ -47,14 +45,18 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_com_get_var_memory_usage, 0)
 	ZEND_ARG_INFO(0, var)
 ZEND_END_ARG_INFO()
-/* {{{ comuto_functions[]
- *
- * Every user visible function must have an entry in comuto_functions[].
+
+/**
+ * Ideas to be added :
+ * - get_class_constants()
+ * - get_declared_objects()
+ * - json_to_xml()
+ * - array_stats()
+ * - Datetime::__toString
  */
 const zend_function_entry comuto_functions[] = {
 	COM_FE(array_create_rand,	arginfo_com_array_create_rand)
-	/*COM_FE(array_stats,	arginfo_com_array_stats)
-	COM_FE(get_var_memory_usage, arginfo_com_get_var_memory_usage)*/
+	COM_FE(get_var_memory_usage, arginfo_com_get_var_memory_usage)
 	PHP_FE_END
 };
 /* }}} */
@@ -85,12 +87,10 @@ ZEND_GET_MODULE(comuto)
 
 /* {{{ PHP_INI
  */
-/* Remove comments and fill if you need to have entries in php.ini
 PHP_INI_BEGIN()
-    STD_PHP_INI_ENTRY("comuto.global_value",      "42", PHP_INI_ALL, OnUpdateLong, global_value, zend_comuto_globals, comuto_globals)
-    STD_PHP_INI_ENTRY("comuto.global_string", "foobar", PHP_INI_ALL, OnUpdateString, global_string, zend_comuto_globals, comuto_globals)
+    STD_PHP_INI_BOOLEAN("comuto.override_php_ini_settings",      "yes", PHP_INI_SYSTEM, OnUpdateBool, override_ini_settings, zend_comuto_globals, comuto_globals)
+    STD_PHP_INI_ENTRY("comuto.datetime_defaut_format", "Y-m-d\\TH:i:sO", PHP_INI_ALL, OnUpdateString, datetime_defaut_format, zend_comuto_globals, comuto_globals)
 PHP_INI_END()
-*/
 /* }}} */
 
 /* {{{ php_comuto_init_globals
@@ -110,10 +110,7 @@ PHP_MINIT_FUNCTION(comuto)
 {
 	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_STRING", COM_ARRAY_RAND_TYPE_STRING, CONST_CS | CONST_PERSISTENT);
 	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_INT", COM_ARRAY_RAND_TYPE_INT, CONST_CS | CONST_PERSISTENT);
-	/* If you have INI entries, uncomment these lines 
 	REGISTER_INI_ENTRIES();
-	*/
-
 	return SUCCESS;
 }
 /* }}} */
@@ -122,9 +119,7 @@ PHP_MINIT_FUNCTION(comuto)
  */
 PHP_MSHUTDOWN_FUNCTION(comuto)
 {
-	/* uncomment this line if you have INI entries
 	UNREGISTER_INI_ENTRIES();
-	*/
 	return SUCCESS;
 }
 /* }}} */
@@ -134,10 +129,12 @@ PHP_MSHUTDOWN_FUNCTION(comuto)
  */
 PHP_RINIT_FUNCTION(comuto)
 {
-	REPLACE_FUNCTION_HANDLE(ini_get);
-	REPLACE_FUNCTION_HANDLE(ini_set);
-	REPLACE_FUNCTION_HANDLE(ini_restore);
-	REPLACE_FUNCTION_HANDLE(get_cfg_var);
+	if(INI_BOOL("comuto.override_php_ini_settings")) {
+		REPLACE_FUNCTION_HANDLE(ini_get);
+		REPLACE_FUNCTION_HANDLE(ini_set);
+		REPLACE_FUNCTION_HANDLE(ini_restore);
+		REPLACE_FUNCTION_HANDLE(get_cfg_var);
+	}
 	return SUCCESS;
 }
 /* }}} */
@@ -158,27 +155,11 @@ PHP_MINFO_FUNCTION(comuto)
 	php_info_print_table_start();
 	php_info_print_table_header(2, "Comuto Tools support", "enabled");
 	php_info_print_table_end();
-
-	/* Remove comments if you have entries in php.ini
 	DISPLAY_INI_ENTRIES();
-	*/
 }
 /* }}} */
 
-static void generate_random_string(char **str)
-{
-	long str_size, index;
-	static const char alpha[] = "0123456789abcdefghijklmnopqrstuvwxyz";
-	size_t j                  = 0;
-	GET_RANDOM_NUMBER(str_size, 1, RANDOM_STRING_SIZE);
-	*str      = emalloc(str_size + 1);
 
-	while(str_size--){
-		GET_RANDOM_NUMBER(index, 1, sizeof(alpha) - 2);
-		(*str)[j++] = alpha[index];
-	}
-	(*str)[j] = '\0';
-}
 
 COM_FUNCTION(array_create_rand)
 {
@@ -219,8 +200,8 @@ COM_FUNCTION(array_create_rand)
 				add_next_index_long(return_value, generated_long);
 			break;
 			default:
-				php_error_docref(NULL, E_WARNING, "Unknown type");
-				return;
+				zend_error(E_WARNING, "Unknown type");
+			return;
 		}
 	}
 }
@@ -232,15 +213,84 @@ COM_FUNCTION(array_stats)
 
 COM_FUNCTION(get_var_memory_usage)
 {
+	zval *arg = NULL;
+	if(zend_parse_parameters(ZEND_NUM_ARGS(), "z", &arg) == FAILURE) {
+		return;
+	}
+	HashTable *cache;
+	ALLOC_HASHTABLE(cache);
+	zend_hash_init(cache, 8, NULL, NULL, 0);
 
+	size_t size = get_var_memory_usage_ex(arg, cache);
+	CLEAR_HASHTABLE(cache);
+	RETURN_LONG(size);
 }
-/* }}} */
-/* The previous line is meant for vim and emacs, so it can correctly fold and 
-   unfold functions in source code. See the corresponding marks just before 
-   function definition, where the functions purpose is also documented. Please 
-   follow this convention for the convenience of others editing your code.
-*/
 
+
+static void generate_random_string(char **str)
+{
+	long str_size, index;
+	static const char alpha[] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	size_t j                  = 0;
+	GET_RANDOM_NUMBER(str_size, 1, RANDOM_STRING_SIZE);
+	*str      = emalloc(str_size + 1);
+
+	while(str_size--){
+		GET_RANDOM_NUMBER(index, 1, sizeof(alpha) - 2);
+		(*str)[j++] = alpha[index];
+	}
+	(*str)[j] = '\0';
+}
+
+static size_t get_var_memory_usage_ex(zval *val, HashTable *zval_cache)
+{
+	size_t *size;
+	if(zend_hash_index_exists(zval_cache, (ulong)val)) {
+		return sizeof(zval *);
+	} else {
+		zend_hash_index_update(zval_cache, (ulong)val, &size, sizeof(void *), NULL);
+		size_t zvalsize = COMMON_ZVAL_SIZE;
+		switch(Z_TYPE_P(val)) {
+			case IS_LONG:
+			case IS_BOOL:
+			case IS_DOUBLE:
+			case IS_NULL:
+			break;
+			case IS_STRING:
+				zvalsize += (size_t)Z_STRLEN_P(val);
+			break;
+			case IS_RESOURCE:
+				zvalsize += (sizeof(zend_rsrc_list_dtors_entry) + sizeof(zend_rsrc_list_entry));
+			break;
+			case IS_OBJECT:
+				zvalsize += (sizeof(zend_class_entry) + sizeof(zend_object));
+				/*
+				 * We should here be more accurate by computing the CE weight as well, this
+				 * however is more difficult as several objects could share the same CE. We leave it for later :)
+				 * + sizeof(zval*) * Z_OBJCE_P(val)->default_properties_count + sizeof(zval*) * Z_OBJCE_P(val)->default_static_members_count)
+				 */
+				zend_object *obj = (zend_object *)zend_object_store_get_object(val);
+				if ((obj)->properties) {
+					zvalsize += COMMON_HT_SIZE(obj->properties);
+					ADD_SIZE_FROM_HT(obj->properties);
+				}
+				if(obj->guards) {
+					zvalsize += COMMON_HT_SIZE(obj->guards);
+					ADD_SIZE_FROM_HT(obj->guards);
+				}
+			break;
+			case IS_ARRAY:
+				zvalsize += COMMON_HT_SIZE(Z_ARRVAL_P(val));
+				ADD_SIZE_FROM_HT(Z_ARRVAL_P(val));
+			break;
+			default:
+				zend_error(E_WARNING, "Unknown variable type");
+				return (size_t)0UL;
+			break;
+		}
+		return zvalsize;
+	}
+}
 
 /*
  * Local variables:
