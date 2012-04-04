@@ -12,11 +12,9 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Julien PAULI (jpauli@php.net) - Copyright (c) 2012           |
   +----------------------------------------------------------------------+
 */
-
-/* $Id: header 321634 2012-01-01 13:15:04Z felipe $ */
 
 #ifndef PHP_COMUTO_H
 #define PHP_COMUTO_H
@@ -87,13 +85,3 @@ ZEND_END_MODULE_GLOBALS(comuto)
 #endif
 
 #endif	/* PHP_COMUTO_H */
-
-
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: noet sw=4 ts=4 fdm=marker
- * vim<600: noet sw=4 ts=4
- */

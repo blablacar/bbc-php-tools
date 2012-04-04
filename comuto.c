@@ -12,11 +12,9 @@
   | obtain it through the world-wide-web, please send a note to          |
   | license@php.net so we can mail you a copy immediately.               |
   +----------------------------------------------------------------------+
-  | Author:                                                              |
+  | Author: Julien PAULI (jpauli@php.net) - Copyright (c) 2012           |
   +----------------------------------------------------------------------+
 */
-
-/* $Id: header 321634 2012-01-01 13:15:04Z felipe $ */
 
 #ifdef HAVE_CONFIG_H
 #include "config.h"
