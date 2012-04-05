@@ -27,6 +27,7 @@
 
 #include "php_comuto.h"
 #include "comuto_ov_functions.h"
+#include "Zend/zend_interfaces.h"
 
 ZEND_DECLARE_MODULE_GLOBALS(comuto)
 
@@ -103,17 +104,17 @@ PHP_METHOD(DateTime, __toString)
 	zend_function *function =  NULL;
 	zval *param = NULL, *retval = NULL;
 
-	HashTable function_table = this_ptr->value.obj.handlers->get_class_entry(this_ptr)->function_table;
+	HashTable function_table = Z_OBJCE_P(getThis())->function_table;
 	zend_hash_find(&function_table, "format", sizeof("format"), (void **)&function);
 
 	ALLOC_INIT_ZVAL(param);
 	ZVAL_STRING(param, COMUTO_G(datetime_defaut_format), 1);
 
-	zend_call_method_with_1_params(&getThis(), this_ptr->value.obj.handlers->get_class_entry(this_ptr), &function, "format", &retval, param);
+	zend_call_method_with_1_params(&getThis(),  Z_OBJCE_P(getThis()), &function, "format", &retval, param);
 
 	zval_ptr_dtor(&param);
 
-	ZVAL_ZVAL(return_value, retval, 1, 1);
+	RETURN_ZVAL(retval, 1, 1)
 }
 
 zend_function_entry datetime_functions[] = {
