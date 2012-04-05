@@ -47,6 +47,10 @@ extern zend_module_entry comuto_module_entry;
 #define COM_FE(funct, arginfo) PHP_FE(comuto_##funct, arginfo)
 #define COM_FN(funct) PHP_FN(comuto_##funct)
 
+#define COM_METHOD(class, meth) PHP_METHOD(class, comuto_##meth)
+#define COM_ME(class, funct, arginfo, info) PHP_ME(class, comuto_##funct, arginfo, info)
+#define COM_MN(meth) PHP_MN(comuto_##meth)
+
 #define CLEAR_HASHTABLE(ht) do { zend_hash_destroy(ht); FREE_HASHTABLE(ht); } while(0)
 
 static size_t get_var_memory_usage_ex(zval *val, HashTable *zval_cache);

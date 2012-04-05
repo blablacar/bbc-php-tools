@@ -12,6 +12,7 @@ dnl Make sure that the comment is aligned:
 dnl [  --with-comuto             Include comuto support])
 
 dnl Otherwise use enable:
+PHP_ADD_EXTENSION_DEP(comuto, date)
 
 PHP_ARG_ENABLE(comuto, whether to enable comuto support,
 dnl Make sure that the comment is aligned:

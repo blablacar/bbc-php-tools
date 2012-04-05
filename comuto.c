@@ -33,38 +33,41 @@ ZEND_DECLARE_MODULE_GLOBALS(comuto)
 /* True global resources - no need for thread safety here */
 static int le_comuto;
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_com_array_create_rand, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_comuto_array_create_rand, 0, 0, 1)
 	ZEND_ARG_INFO(0, size)
 	ZEND_ARG_INFO(0, type)
 ZEND_END_ARG_INFO()
-ZEND_BEGIN_ARG_INFO(arginfo_com_array_stats, 0)
+ZEND_BEGIN_ARG_INFO(arginfo_comuto_array_stats, 0)
 	ZEND_ARG_ARRAY_INFO(0, array, 0)
 ZEND_END_ARG_INFO()
-ZEND_BEGIN_ARG_INFO(arginfo_com_get_var_memory_usage, 0)
+ZEND_BEGIN_ARG_INFO(arginfo_comuto_get_var_memory_usage, 0)
 	ZEND_ARG_INFO(0, var)
 ZEND_END_ARG_INFO()
-
 /**
  * Ideas to be added :
  * - get_class_constants()
  * - get_declared_objects()
  * - json_to_xml()
  * - array_stats()
- * - Datetime::__toString
+ * - mmap shm as a resource
  */
-const zend_function_entry comuto_functions[] = {
-	COM_FE(array_create_rand,	arginfo_com_array_create_rand)
-	COM_FE(get_var_memory_usage, arginfo_com_get_var_memory_usage)
+static const zend_function_entry comuto_functions[] = {
+	COM_FE(array_create_rand,    arginfo_comuto_array_create_rand)
+	COM_FE(get_var_memory_usage, arginfo_comuto_get_var_memory_usage)
 	PHP_FE_END
 };
 /* }}} */
 
+static const zend_module_dep comuto_deps[] = {
+		ZEND_MOD_REQUIRED("date")
+		ZEND_MOD_END
+};
 /* {{{ comuto_module_entry
  */
 zend_module_entry comuto_module_entry = {
-#if ZEND_MODULE_API_NO >= 20010901
-	STANDARD_MODULE_HEADER,
-#endif
+	STANDARD_MODULE_HEADER_EX,
+	NULL,
+	comuto_deps,
 	"comuto_tools",
 	comuto_functions,
 	PHP_MINIT(comuto),
@@ -72,9 +75,7 @@ zend_module_entry comuto_module_entry = {
 	PHP_RINIT(comuto),		/* Replace with NULL if there's nothing to do at request start */
 	PHP_RSHUTDOWN(comuto),	/* Replace with NULL if there's nothing to do at request end */
 	PHP_MINFO(comuto),
-#if ZEND_MODULE_API_NO >= 20010901
 	"0.1", /* Replace with version number for your extension */
-#endif
 	STANDARD_MODULE_PROPERTIES
 };
 /* }}} */
@@ -91,21 +92,42 @@ PHP_INI_BEGIN()
 PHP_INI_END()
 /* }}} */
 
-/* {{{ php_comuto_init_globals
- */
-/* Uncomment this function if you have INI entries
 static void php_comuto_init_globals(zend_comuto_globals *comuto_globals)
 {
-	comuto_globals->global_value = 0;
-	comuto_globals->global_string = NULL;
+	comuto_globals->override_ini_settings = 0;
+	comuto_globals->datetime_defaut_format = NULL;
 }
-*/
-/* }}} */
 
-/* {{{ PHP_MINIT_FUNCTION
- */
+PHP_METHOD(DateTime, __toString)
+{
+	zend_function *function =  NULL;
+	zval *param = NULL, *retval = NULL;
+
+	HashTable function_table = this_ptr->value.obj.handlers->get_class_entry(this_ptr)->function_table;
+	zend_hash_find(&function_table, "format", sizeof("format"), (void **)&function);
+
+	ALLOC_INIT_ZVAL(param);
+	ZVAL_STRING(param, COMUTO_G(datetime_defaut_format), 1);
+
+	zend_call_method_with_1_params(&getThis(), this_ptr->value.obj.handlers->get_class_entry(this_ptr), &function, "format", &retval, param);
+
+	zval_ptr_dtor(&param);
+
+	ZVAL_ZVAL(return_value, retval, 1, 1);
+}
+
+zend_function_entry datetime_functions[] = {
+	PHP_ME(DateTime, __toString, NULL, ZEND_ACC_PUBLIC)
+};
+
 PHP_MINIT_FUNCTION(comuto)
 {
+	if (zend_hash_exists(&module_registry, "date", sizeof("date"))) {
+			zend_class_entry **datetime = NULL;
+			if (zend_hash_find(CG(class_table), "datetime", sizeof("datetime"), (void**)&datetime) == SUCCESS) {
+				zend_register_functions(*datetime, datetime_functions, &(*datetime)->function_table, MODULE_PERSISTENT TSRMLS_CC);
+			}
+	}
 	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_STRING", COM_ARRAY_RAND_TYPE_STRING, CONST_CS | CONST_PERSISTENT);
 	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_INT", COM_ARRAY_RAND_TYPE_INT, CONST_CS | CONST_PERSISTENT);
 	REGISTER_INI_ENTRIES();
@@ -156,8 +178,6 @@ PHP_MINFO_FUNCTION(comuto)
 	DISPLAY_INI_ENTRIES();
 }
 /* }}} */
-
-
 
 COM_FUNCTION(array_create_rand)
 {
