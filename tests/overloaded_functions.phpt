@@ -1,5 +1,7 @@
 --TEST--
 Test overloaded functions
+--INI--
+comuto.override_php_ini_settings=1
 --FILE--
 <?php
 ini_set('foo', 'bar');

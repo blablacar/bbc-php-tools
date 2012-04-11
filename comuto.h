@@ -21,8 +21,8 @@
 
 #include "php_comuto.h"
 
-#define COM_ARRAY_RAND_TYPE_STRING 1
-#define COM_ARRAY_RAND_TYPE_INT    2
+#define COMUTO_ARRAY_RAND_TYPE_STRING 1
+#define COMUTO_ARRAY_RAND_TYPE_INT    2
 #define RANDOM_STRING_SIZE 42 /* yes */
 
 #define GET_RANDOM_NUMBER(_number, _min, _max) {(_number) = php_rand(TSRMLS_C); RAND_RANGE((_number), (_min), (_max), PHP_RAND_MAX);}

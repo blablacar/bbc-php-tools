@@ -129,8 +129,8 @@ PHP_MINIT_FUNCTION(comuto)
 				zend_register_functions(*datetime, datetime_functions, &(*datetime)->function_table, MODULE_PERSISTENT TSRMLS_CC);
 			}
 	}
-	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_STRING", COM_ARRAY_RAND_TYPE_STRING, CONST_CS | CONST_PERSISTENT);
-	REGISTER_LONG_CONSTANT("COM_ARRAY_RAND_TYPE_INT", COM_ARRAY_RAND_TYPE_INT, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("COMUTO_ARRAY_RAND_TYPE_STRING", COMUTO_ARRAY_RAND_TYPE_STRING, CONST_CS | CONST_PERSISTENT);
+	REGISTER_LONG_CONSTANT("COMUTO_ARRAY_RAND_TYPE_INT", COMUTO_ARRAY_RAND_TYPE_INT, CONST_CS | CONST_PERSISTENT);
 	REGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
@@ -182,7 +182,7 @@ PHP_MINFO_FUNCTION(comuto)
 
 COM_FUNCTION(array_create_rand)
 {
-	long num_items, items_type = COM_ARRAY_RAND_TYPE_STRING, index, generated_long;
+	long num_items, items_type = COMUTO_ARRAY_RAND_TYPE_STRING, index, generated_long;
 	ulong i;
 	char *generated_string = NULL;
 	HashTable *table;
@@ -200,7 +200,7 @@ COM_FUNCTION(array_create_rand)
 
 	for(i=0; i<num_items; i++) {
 		switch (items_type) {
-			case (COM_ARRAY_RAND_TYPE_STRING | COM_ARRAY_RAND_TYPE_INT):
+			case (COMUTO_ARRAY_RAND_TYPE_STRING | COMUTO_ARRAY_RAND_TYPE_INT):
 				GET_RANDOM_NUMBER(index, 0, 1);
 				if(index) {
 					generate_random_string(&generated_string);
@@ -210,16 +210,16 @@ COM_FUNCTION(array_create_rand)
 					add_next_index_long(return_value, generated_long);
 				}
 			break;
-			case COM_ARRAY_RAND_TYPE_STRING:
+			case COMUTO_ARRAY_RAND_TYPE_STRING:
 				generate_random_string(&generated_string);
 				add_next_index_string(return_value, generated_string, 0);
 			break;
-			case COM_ARRAY_RAND_TYPE_INT:
+			case COMUTO_ARRAY_RAND_TYPE_INT:
 				generate_random_long(generated_long);
 				add_next_index_long(return_value, generated_long);
 			break;
 			default:
-				zend_error(E_WARNING, "Unknown type");
+				php_error_docref(NULL, E_WARNING, "Unknown type");
 			return;
 		}
 	}
