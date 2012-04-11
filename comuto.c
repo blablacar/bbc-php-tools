@@ -126,9 +126,37 @@ PHP_MINIT_FUNCTION(comuto)
 	if (zend_hash_exists(&module_registry, "date", sizeof("date"))) {
 			zend_class_entry **datetime = NULL;
 			if (zend_hash_find(CG(class_table), "datetime", sizeof("datetime"), (void**)&datetime) == SUCCESS) {
-				zend_register_functions(*datetime, datetime_functions, &(*datetime)->function_table, MODULE_PERSISTENT TSRMLS_CC);
+				zend_internal_function tostring;
+				zend_function *reg_tostring = NULL;
+				char *function_name_lc = NULL;
+				tostring.handler = datetime_functions->handler;
+				tostring.type = ZEND_INTERNAL_FUNCTION;
+				tostring.module = &comuto_module_entry;
+				tostring.function_name = (char *)datetime_functions->fname;
+				tostring.scope = *datetime;
+				tostring.prototype = NULL;
+				tostring.arg_info = NULL;
+				tostring.num_args = 0;
+				tostring.required_num_args = 0;
+				tostring.pass_rest_by_reference = 0;
+				tostring.return_reference = 0;
+				tostring.fn_flags = datetime_functions->flags;
+				function_name_lc = zend_str_tolower_dup(tostring.function_name, strlen(tostring.function_name));
+				zend_hash_add(&(*datetime)->function_table,
+							  function_name_lc,
+							  strlen(tostring.function_name)+1,
+							  &tostring,
+							  sizeof(zend_function),
+							  (void **)&reg_tostring);
+				(*datetime)->__tostring = reg_tostring;
+				efree(function_name_lc);
+			} else {
+				return FAILURE;
 			}
+	} else {
+		return FAILURE;
 	}
+
 	REGISTER_LONG_CONSTANT("COMUTO_ARRAY_RAND_TYPE_STRING", COMUTO_ARRAY_RAND_TYPE_STRING, CONST_CS | CONST_PERSISTENT);
 	REGISTER_LONG_CONSTANT("COMUTO_ARRAY_RAND_TYPE_INT", COMUTO_ARRAY_RAND_TYPE_INT, CONST_CS | CONST_PERSISTENT);
 	REGISTER_INI_ENTRIES();
