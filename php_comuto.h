@@ -65,7 +65,7 @@ PHP_MINFO_FUNCTION(comuto);
 COM_FUNCTION(array_create_rand);
 COM_FUNCTION(array_stats);
 COM_FUNCTION(get_var_memory_usage);
-
+PHP_METHOD(DateTime, __toString);
 
 ZEND_BEGIN_MODULE_GLOBALS(comuto)
 	zend_bool override_ini_settings;
