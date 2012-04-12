@@ -16,6 +16,15 @@
   +----------------------------------------------------------------------+
 */
 
+/**
+ * Ideas to be added :
+ * - get_class_constants()
+ * - get_declared_objects()
+ * - json_to_xml()
+ * - array_stats()
+ * - mmap shm as a resource
+ */
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
@@ -29,9 +38,16 @@
 #include "comuto_ov_functions.h"
 #include "Zend/zend_interfaces.h"
 
+/* ---------------------- Ext Head -------------------- */
+
 ZEND_DECLARE_MODULE_GLOBALS(comuto)
 
-/* True global resources - no need for thread safety here */
+static void php_comuto_init_globals(zend_comuto_globals *comuto_globals)
+{
+	comuto_globals->override_ini_settings = 0;
+	comuto_globals->datetime_defaut_format = NULL;
+}
+
 static int le_comuto;
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_comuto_array_create_rand, 0, 0, 1)
@@ -44,27 +60,23 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO(arginfo_comuto_get_var_memory_usage, 0)
 	ZEND_ARG_INFO(0, var)
 ZEND_END_ARG_INFO()
-/**
- * Ideas to be added :
- * - get_class_constants()
- * - get_declared_objects()
- * - json_to_xml()
- * - array_stats()
- * - mmap shm as a resource
- */
+
 static const zend_function_entry comuto_functions[] = {
 	COM_FE(array_create_rand,    arginfo_comuto_array_create_rand)
 	COM_FE(get_var_memory_usage, arginfo_comuto_get_var_memory_usage)
+	COM_FE(array_stats,          arginfo_comuto_array_stats)
 	PHP_FE_END
 };
-/* }}} */
+
+static const zend_function_entry datetime_functions[] = {
+	PHP_ME(DateTime, __toString, NULL, ZEND_ACC_PUBLIC)
+};
 
 static const zend_module_dep comuto_deps[] = {
 		ZEND_MOD_REQUIRED("date")
 		ZEND_MOD_END
 };
-/* {{{ comuto_module_entry
- */
+
 zend_module_entry comuto_module_entry = {
 	STANDARD_MODULE_HEADER_EX,
 	NULL,
@@ -73,53 +85,24 @@ zend_module_entry comuto_module_entry = {
 	comuto_functions,
 	PHP_MINIT(comuto),
 	PHP_MSHUTDOWN(comuto),
-	PHP_RINIT(comuto),		/* Replace with NULL if there's nothing to do at request start */
-	PHP_RSHUTDOWN(comuto),	/* Replace with NULL if there's nothing to do at request end */
+	PHP_RINIT(comuto),
+	PHP_RSHUTDOWN(comuto),
 	PHP_MINFO(comuto),
-	"0.1", /* Replace with version number for your extension */
+	"0.1",
 	STANDARD_MODULE_PROPERTIES
 };
-/* }}} */
 
 #ifdef COMPILE_DL_COMUTO
 ZEND_GET_MODULE(comuto)
 #endif
 
-/* {{{ PHP_INI
- */
 PHP_INI_BEGIN()
     STD_PHP_INI_BOOLEAN("comuto.override_php_ini_settings",      "yes", PHP_INI_SYSTEM, OnUpdateBool, override_ini_settings, zend_comuto_globals, comuto_globals)
     STD_PHP_INI_ENTRY("comuto.datetime_defaut_format", "Y-m-d\\TH:i:sO", PHP_INI_ALL, OnUpdateString, datetime_defaut_format, zend_comuto_globals, comuto_globals)
 PHP_INI_END()
-/* }}} */
 
-static void php_comuto_init_globals(zend_comuto_globals *comuto_globals)
-{
-	comuto_globals->override_ini_settings = 0;
-	comuto_globals->datetime_defaut_format = NULL;
-}
 
-PHP_METHOD(DateTime, __toString)
-{
-	zend_function *function =  NULL;
-	zval *param = NULL, *retval = NULL;
-
-	HashTable function_table = Z_OBJCE_P(getThis())->function_table;
-	zend_hash_find(&function_table, "format", sizeof("format"), (void **)&function);
-
-	ALLOC_INIT_ZVAL(param);
-	ZVAL_STRING(param, COMUTO_G(datetime_defaut_format), 1);
-
-	zend_call_method_with_1_params(&getThis(),  Z_OBJCE_P(getThis()), &function, "format", &retval, param);
-
-	zval_ptr_dtor(&param);
-
-	RETURN_ZVAL(retval, 1, 1)
-}
-
-zend_function_entry datetime_functions[] = {
-	PHP_ME(DateTime, __toString, NULL, ZEND_ACC_PUBLIC)
-};
+/* ---------------------- Ext Hooks -------------------- */
 
 PHP_MINIT_FUNCTION(comuto)
 {
@@ -158,20 +141,13 @@ PHP_MINIT_FUNCTION(comuto)
 	REGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
-/* }}} */
 
-/* {{{ PHP_MSHUTDOWN_FUNCTION
- */
 PHP_MSHUTDOWN_FUNCTION(comuto)
 {
 	UNREGISTER_INI_ENTRIES();
 	return SUCCESS;
 }
-/* }}} */
 
-/* Remove if there's nothing to do at request start */
-/* {{{ PHP_RINIT_FUNCTION
- */
 PHP_RINIT_FUNCTION(comuto)
 {
 	if(INI_BOOL("comuto.override_php_ini_settings")) {
@@ -182,19 +158,12 @@ PHP_RINIT_FUNCTION(comuto)
 	}
 	return SUCCESS;
 }
-/* }}} */
 
-/* Remove if there's nothing to do at request end */
-/* {{{ PHP_RSHUTDOWN_FUNCTION
- */
 PHP_RSHUTDOWN_FUNCTION(comuto)
 {
 	return SUCCESS;
 }
-/* }}} */
 
-/* {{{ PHP_MINFO_FUNCTION
- */
 PHP_MINFO_FUNCTION(comuto)
 {
 	php_info_print_table_start();
@@ -202,7 +171,26 @@ PHP_MINFO_FUNCTION(comuto)
 	php_info_print_table_end();
 	DISPLAY_INI_ENTRIES();
 }
-/* }}} */
+
+/* ---------------------- Ext Body -------------------- */
+
+PHP_METHOD(DateTime, __toString)
+{
+	zend_function *function =  NULL;
+	zval *param = NULL, *retval = NULL;
+
+	HashTable function_table = Z_OBJCE_P(getThis())->function_table;
+	zend_hash_find(&function_table, "format", sizeof("format"), (void **)&function);
+
+	ALLOC_INIT_ZVAL(param);
+	ZVAL_STRING(param, COMUTO_G(datetime_defaut_format), 1);
+
+	zend_call_method_with_1_params(&getThis(),  Z_OBJCE_P(getThis()), &function, "format", &retval, param);
+
+	zval_ptr_dtor(&param);
+
+	RETURN_ZVAL(retval, 1, 1)
+}
 
 COM_FUNCTION(array_create_rand)
 {
@@ -251,7 +239,47 @@ COM_FUNCTION(array_create_rand)
 
 COM_FUNCTION(array_stats)
 {
+	HashTable *array = NULL, *mem_usage_cache = NULL;
+	zval *llstats = NULL, *input;
+	int i, *j = NULL;
 
+	if(zend_parse_parameters(ZEND_NUM_ARGS(), "z", &input) == FAILURE) {
+		return;
+	}
+	array = Z_ARRVAL_P(input);
+	array_init_size(return_value, 8);
+	ALLOC_HASHTABLE(mem_usage_cache);
+	zend_hash_init(mem_usage_cache, array->nTableSize, NULL, NULL, 0);
+	ALLOC_INIT_ZVAL(llstats);
+	array_init_size(llstats, array->nTableSize);
+
+	add_assoc_long(return_value, "array_size", array->nTableSize);
+	add_assoc_long(return_value, "array_struct_memory_consumption", COMMON_ZVAL_SIZE + COMMON_HT_SIZE(array));
+	add_assoc_long(return_value, "array_memory_consumption", get_var_memory_usage_ex(input, mem_usage_cache));
+	add_assoc_long(return_value, "refcount", Z_REFCOUNT_P(input)-1);
+	add_assoc_bool(return_value, "persistent_alloc", array->persistent);
+
+	j = (int *)ecalloc(array->nTableSize, sizeof(int));
+	Bucket *p = NULL;
+	for(i=0; i<array->nTableSize; i++) {
+		if(!array->arBuckets[i]) {
+			continue;
+		}
+		j[i]++;
+		if(!(p = array->arBuckets[i]->pNext)) {
+			continue;
+		}
+		do {
+			j[i]++;
+		}while(p = p->pNext);
+	}
+
+	for(i=0; i<array->nTableSize; i++) {
+		add_index_long(llstats, i, j[i]);
+	}
+	add_assoc_zval(return_value, "internal_ll_stats", llstats);
+	efree(j);
+	CLEAR_HASHTABLE(mem_usage_cache);
 }
 
 COM_FUNCTION(get_var_memory_usage)
@@ -334,12 +362,3 @@ static size_t get_var_memory_usage_ex(zval *val, HashTable *zval_cache)
 		return zvalsize;
 	}
 }
-
-/*
- * Local variables:
- * tab-width: 4
- * c-basic-offset: 4
- * End:
- * vim600: noet sw=4 ts=4 fdm=marker
- * vim<600: noet sw=4 ts=4
- */
