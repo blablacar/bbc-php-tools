@@ -1,3 +1,12 @@
-Comuto Tools
+Comuto Tools - PHP tools used at covoiturage.fr
 
-PHP tools used at covoiturage.fr
+This extension is part of our R&D department.
+It's aimed to be used in our environnement, we don't provide
+any support at all.
+
+It is subject to huge changes with no future disclamer.
+Please, read the licence warnings for more info.
+
+For more info about what is provided inside,
+please see the tests.
+Some doc may be written in future.
