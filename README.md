@@ -133,5 +133,5 @@ echo comuto_get_var_memory_usage($int); /* 32 */
 echo comuto_get_var_memory_usage($str); /* 59 */
 echo comuto_get_var_memory_usage($obj); /* 872 */
 echo comuto_get_var_memory_usage($array); /* 1561 */
-echo comuto_get_var_memory_usage($array); /* 3308 */
+echo comuto_get_var_memory_usage($complexarray); /* 3308 */
 ```
