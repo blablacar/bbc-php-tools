@@ -24,9 +24,10 @@ make install
 
 ### comuto_array_rand()
 
-``comuto_array_rand(int $num_of_items, int $type = COMUTO_ARRAY_RAND_TYPE_STRING)
+``comuto_array_rand(int $num_of_items, int $type = COMUTO_ARRAY_RAND_TYPE_STRING)``
 
 ```php
+<?php
 var_dump(comuto_array_create_rand(2));
 /*array(2) {
   [0]=>
@@ -60,9 +61,10 @@ var_dump(comuto_array_create_rand(3, COMUTO_ARRAY_RAND_TYPE_STRING | COMUTO_ARRA
 
 ### DateTime::__toString()
 
-``DateTime::__toString()
+``DateTime::__toString()``
 
 ```php
+<?php
 date_default_timezone_set('UTC');
 
 $d = new DateTime;
@@ -74,9 +76,10 @@ echo $d; /* 13-04-2012 */
 
 ### comuto_array_stats()
 
-``comuto_array_stats(array $array)
+``comuto_array_stats(array $array)``
 
 ```php
+<?php
 $array = array('foo', 'bar', 4 => array(str_repeat('a', 1024), 123), new StdClass);
 var_dump(comuto_array_stats($array));
 
@@ -116,9 +119,10 @@ array(6) {
 
 ### comuto_get_var_memory_usage()
 
-``comuto_get_var_memory_usage($somevar)
+``comuto_get_var_memory_usage($somevar)``
 
 ```php
+<?php
 $int = 123;
 $str = "foo bar and baz (why not ?)";
 $obj = new SplObjectStorage();
