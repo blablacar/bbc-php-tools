@@ -48,8 +48,6 @@ static void php_comuto_init_globals(zend_comuto_globals *comuto_globals)
 	comuto_globals->datetime_defaut_format = NULL;
 }
 
-static int le_comuto;
-
 ZEND_BEGIN_ARG_INFO_EX(arginfo_comuto_array_create_rand, 0, 0, 1)
 	ZEND_ARG_INFO(0, size)
 	ZEND_ARG_INFO(0, type)
@@ -197,7 +195,6 @@ COM_FUNCTION(array_create_rand)
 	long num_items, items_type = COMUTO_ARRAY_RAND_TYPE_STRING, index, generated_long;
 	ulong i;
 	char *generated_string = NULL;
-	HashTable *table;
 
 	if(zend_parse_parameters(ZEND_NUM_ARGS(), "l|l", &num_items, &items_type) == FAILURE) {
 		return;
