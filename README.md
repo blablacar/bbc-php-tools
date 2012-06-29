@@ -129,7 +129,7 @@ $obj = new SplObjectStorage();
 $array = array('foo', 'bar', $str, array($obj, $str, $str), $int, 'foo'=> array($int));
 $complexarray = array($array, array(array(array('foo', new DateTime, array()))));
 
-echo comuto_get_var_memory_usage($int); /* 32 */
+echo comuto_get_var_memory_usage($int); /* 8 */
 echo comuto_get_var_memory_usage($str); /* 59 */
 echo comuto_get_var_memory_usage($obj); /* 872 */
 echo comuto_get_var_memory_usage($array); /* 1561 */
